@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html><head>
+  <title>Rufin's Qryptic Crossword Challenge</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+<style>
+  @font-face {
+    font-family: 'LCD';
+    font-style: normal;
+    font-weight: normal;
+    src: local('LCD'), url("rsrc/LCD14.otf");
+  }
+  @font-face {
+    font-family: 'Icons';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Icons'), url("rsrc/MaterialIconsOutlined-Regular.otf");
+  }
+
+  html, body{
+    touch-action: pan-x pan-y;
+    padding:0;
+    margin:0;
+    box-sizing: border-box;
+  }
+
+  /*=======================================================
+
+    Game screen layout (responsive layout using CSS grid)
+
+  ========================================================*/
+  /* narrowest type of screen */
+  #gameGridDiv {
+    height:max(100vh,calc(100vw + 300px));
+    width:100vw;
+    display:grid;
+    grid-template-areas:
+    "x"
+    "a"
+    "d"
+    "s";
+    grid-template-rows: 100vw auto auto 60px;
+  }
+
+  /*-----------------------------------
+    On Screen Keyboard
+  ------------------------------------*/
+  #kbd {
+    position:Fixed;
+    top:0;
+    left:0;
+    width:100vw;
+    height:30vw;
+    background-color: transparent;
+
+    display:grid;
+    /* grid-template-areas:
+    "a b c d e f g h i   pos"
+    "j k l m n o p q r   rtn"
+    "s t u v w x y z bck rtn"; */
+    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(10, 1fr);
+  }
+  #kbd button {
+    height: calc(100% - 4px);
+    width: calc(100% - 4px);
+    margin:2px;
+    border-width:0;
+    border-style:none;
+    background-color: #acb9;
+    color:#120;
+    font-family:"Courier New", monospace;
+    font-weight:600;
+    font-size:min(8vw, 30px);
+    border-radius:3px;
+    padding:0px;  /* <== crucial! o.w. mobile safari will default to a large padding */
+  }
+  #kbd button:hover:active {
+    transform: translate(1px, 2px);
+  }
+  #kbd button#Backspace_key, #kbd button#Enter_key {
+    font-family: "Icons";
+    font-weight: 100;
+    background-color:#d438;
+    color:#fff;
+  }
+  #kbd button#kbdpos_key, #kbd button#close_key {
+    font-family: "Icons";
+    font-weight: 100;
+    background-color:#e808;
+    color:#400;
+  }
+
+  /*++++++++++++++++++++++++++++++++++++++++++++++++++*\
+  *   Responsive Layout Changes
+  \*++++++++++++++++++++++++++++++++++++++++++++++++++*/
+  /* 600px or less screen with one column for clues */
+  @media only screen and (min-width: 600px) {
+    #gameGridDiv {
+      height:100vh;
+      width:100vw;
+      display:grid;
+      grid-template-areas:
+      "x a"
+      "x d"
+      "s s";
+      grid-template-rows: auto auto 60px;
+      grid-template-columns: 60% 40%;
+    }
+    #kbd {
+      width:60vw;
+      height:18vw;
+    }
+  }
+
+  /* 900px and up screen wide enough for 2 columns of clues */
+  @media only screen and (min-width: 900px) {
+    #gameGridDiv {
+      height:100vh;
+      width:100vw;
+      display:grid;
+      grid-template-areas:
+      "x a d"
+      "s s s";
+      grid-template-rows: 1fr 60px;
+      grid-template-columns: min(50%, calc(100vh - 60px)) repeat(2, 1fr);
+    }
+    #kbd {
+      width: min(50vw, calc(100vh - 60px));
+      height: min(15vw, calc(( 100vh - 60px ) * 0.3));
+    }
+    /* #kbd button {
+      font-size:min(4vw, calc(( 100vh - 60px ) * 0.08));
+    } */
+  }
+
+  /* The crossword grid */
+  #xwordDiv
+  {
+    grid-area: x;
+    box-sizing: border-box;
+    padding:0;
+    margin:0;
+    border-collapse: collapse;
+    /* border-style: inset;
+    border-width: 3px;
+    border-color: #eee; */
+    background-color: #000;
+  }
+  /* Clue divs */
+  .cluesDiv{
+    /* display:grid; */
+    overflow-y: auto;
+    grid-template-rows: auto;
+    padding:8px;
+    font-family: "Arial";
+    font-size: 20px;
+    font-weight: bold;
+    color: #444;
+  }
+  .cluesDiv b {
+    font-size: smaller;
+    font-family:Arial, Helvetica, "Swiss", sans-serif;
+  }
+  .clueLC {
+    font-size:smaller;
+    font-family:Arial, Helvetica, "Swiss", sans-serif;
+    color:#888;
+  }
+  #aCluesDiv{
+    grid-area: a;
+    background-color: #fff;
+    border-style:solid;
+    border-width:1px;
+  }
+  #dCluesDiv {
+    grid-area: d;
+    background-color: #fff;
+    border-style:solid;
+    border-width:1px;
+  }
+  #scoresDiv {
+    grid-area: s;
+    background-color: yellow;
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    z-index:2;
+  }
+  #gfxCanv {
+    position: absolute;
+    top:0px;
+    left:0px;
+    padding:0;
+    margin:0;
+  }
+  .winner0 {
+    background-color: #6ae5;
+    /* color:#fff; */
+  }
+  .winner1 {
+    background-color: #7e75;
+    /* color:#fff; */
+  }
+  .winner2 {
+    background-color: #f775;
+    /* color:#fff; */
+  }
+  .winner3 {
+    background-color: lightgoldenrodyellow;
+    /* color:#fff; */
+  }
+
+  .clueLine {
+    font-family: "Times New Roman", serif;
+    font-size:20px;
+    font-weight:normal;
+    border-radius:4px;
+    border-width:1px;
+    border-style:solid;
+    border-color:transparent;
+    color:#000;
+    padding:4px;
+    /* padding-top:4px;
+    padding-bottom:4px; */
+  }
+  .clueLine.activeClue{
+    background-color: gold;
+    color:#115;
+    border-radius:15px;
+    animation: 1s blinkyClue ease infinite;
+  }
+  @keyframes blinkyClue {
+    to {
+      background-color: #fff;
+    }
+  }
+  .clueLine:hover {
+    /* background-color: #ffa; */
+    border-color:#bbb;
+  }
+  .clueLine:active:hover {
+    background-color: yellow;
+    border-radius:15px;
+  }
+  .clueLine.claimed {
+    color:#999;
+  }
+  .bonus {
+    border-radius: 8pt;
+    height:15px;
+    font-family:Arial, sans-serif;
+    padding: 2px 4px;
+    font-size:14px;
+    background-color: orange;
+    color:#fff;
+  }
+  .scoreBtn {
+    border-radius: 16px;
+    margin: 4px;
+    background-color: #fff;
+    border-width:1px;
+    border-style: solid;
+    padding: 0 10px;
+  }
+  .scoreBtn:hover {
+    background-color: #eee;
+  }
+  .scoreBtn:hover:active {
+    transform: translate(2px, 2px);
+  }
+  .currPlay{
+    border-width: 4px;
+  }
+  #score0 {
+    font-size:35px;
+    color: #24a;
+    border-color: #24a;
+  }
+  #score1 {
+    font-size:35px;
+    color: #4a2;
+    border-color: #4a2;
+  }
+  #score2 {
+    font-size:35px;
+    color: #a24;
+    border-color: #a24;
+  }
+
+  .lcd {
+    float: left;
+    font-family:"LCD";
+    font-size:30px;
+  }
+
+  /*=================================================
+    Score and player turn buttons
+  ==================================================*/
+  #infoDiv {
+    position:fixed;
+    background-color:gold;
+    /* padding-top: 30px;
+    padding-left:30px;
+    padding-right:30px; */
+    padding:30px;
+    top:50%;
+    left:50%;
+    /*height:30%;
+    width:40%; */
+    -ms-transform: translate(-50%,-50%);
+    -webkit-transform: translate(-50%,-50%);
+    transform: translate(-50%,-50%);
+    font-size: 5vw;
+    font-family:"Arial Black";
+    font-weight:bold;
+    text-align:center;
+    vertical-align: middle;
+    border-radius: 16px;
+  }
+
+/*==================================================
+  Running-light barbarshop-like border animation
+ ==================================================*/
+.bordertwo {
+  color: #FA2A00;
+  outline: 15px dashed #F2D694;
+  box-shadow: 0 0 0 15px #FA2A00;
+  animation: 1s animateBorderTwo ease infinite;
+}
+@keyframes animateBorderTwo {
+  to {
+    outline-color: #FA2A00;
+    box-shadow: 0 0 0 15px #F2D694;
+  }
+}
+
+.border0 {
+  color: #24a;
+  outline: 12px dashed #eef;
+  box-shadow: 0 0 0 12px #24a;
+  animation: 0.5s kfBorder0 ease infinite;
+}
+@keyframes kfBorder0 {
+  to {
+    outline-color: #24a;
+    box-shadow: 0 0 0 12px #eef;
+  }
+}
+
+.border1 {
+  color: #4a2;
+  outline: 12px dashed #efe;
+  box-shadow: 0 0 0 12px #4a2;
+  animation: 0.5s kfBorder1 ease infinite;
+}
+@keyframes kfBorder1 {
+  to {
+    outline-color: #4a2;
+    box-shadow: 0 0 0 12px #efe;
+  }
+}
+
+.border2 {
+  color: #FA2A00;
+  outline: 12px dashed #fee;
+  box-shadow: 0 0 0 12px #FA2A00;
+  animation: 0.5s kfBorder2 ease infinite;
+}
+@keyframes kfBorder2 {
+  to {
+    outline-color: #FA2A00;
+    box-shadow: 0 0 0 12px #fee;
+  }
+}
+
+
+</style>
+
+<script src="xword.js"></script>
+</head>
+
+<body onload = "initPage();">
+
+  <div id="gameGridDiv">
+    <div id="xwordDiv">
+      <canvas class="gfxCanv" id="gfxCanv"></canvas>
+    </div>
+    <div id="aCluesDiv" class="cluesDiv">
+    </div>
+    <div id="dCluesDiv" class="cluesDiv">
+    </div>
+    <div id="scoresDiv">
+      <button id="score0" class="scoreBtn currPlay">0</button>
+      <button id="score1" class="scoreBtn">0</button>
+      <button id="score2" class="scoreBtn">0</button>
+    </div>
+  </div>
+
+  <div id="infoDiv" class="bordertwo" hidden="true">
+  </div>
+
+  <div id="kbd" hidden="true">
+    <button id="q_key">Q</button>
+    <button id="w_key">W</button>
+    <button id="e_key">E</button>
+    <button id="r_key">R</button>
+    <button id="t_key">T</button>
+    <button id="y_key">Y</button>
+    <button id="u_key">U</button>
+    <button id="i_key">I</button>
+    <button id="o_key">O</button>
+    <button id="p_key">P</button>
+
+    <button id="a_key">A</button>
+    <button id="s_key">S</button>
+    <button id="d_key">D</button>
+    <button id="f_key">F</button>
+    <button id="g_key">G</button>
+    <button id="h_key">H</button>
+    <button id="j_key">J</button>
+    <button id="k_key">K</button>
+    <button id="l_key">L</button>
+    <button id="Enter_key">&#xe877;</button>
+
+    <button id="close_key">&#xe5c9;</button>
+    <button id="z_key">Z</button>
+    <button id="x_key">X</button>
+    <button id="c_key">C</button>
+    <button id="v_key">V</button>
+    <button id="b_key">B</button>
+    <button id="n_key">N</button>
+    <button id="m_key">M</button>
+    <button id="Backspace_key">&#xe14a;</button>
+    <button id="kbdpos_key">&#xe8d6;</button>
+
+  </div>
+
+</body>
+</html>
