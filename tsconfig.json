@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    /*
+      Notes on compiling for Android "internet" and closure compiler:
+      ES6  +  closure adv.opt : ok
+      ES5  +  closure adv.opt : all getters would not work.
+      ES6 w/o closure adv.opt : not working on android.
+      ES5 w/o closure         : ok.
+      without lib:[es6, dom] closure would complain about MIDI functions.
+    */
+    /*"lib" : ["es6", "dom", "es2018.promise"], */
+    "lib" : ["es6", "dom", "es2018.promise"],
+    "target": "ES6",
+    "module": "commonjs",
+    "sourceMap": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    //"noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "allowJs": true,
+    //"esModuleInterop": true,
+    //"allowSyntheticDefaultImports": true,
+  },
+  "compileOnSave": true,
+  "exclude": [
+    "node_modules",
+    "**/*.d.ts"
+  ],
+  "files": [
+    "xword.ts",
+  ]
+}
